@@ -18,18 +18,16 @@ public class QuotesController : ControllerBase
         _db = db;
     }
 
+    private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
     [HttpGet]
     public IActionResult GetQuotes()
-    {
-        // Visa alla citat
-        return Ok(_db.Quotes.ToList());
-    }
-
+        => Ok(_db.Quotes.Where(q => q.UserId == UserId).ToList());
 
     [HttpPost]
     public IActionResult CreateQuote([FromBody] Quote quote)
     {
-        quote.UserId = GetUserId();
+        quote.UserId = UserId;
         _db.Quotes.Add(quote);
         _db.SaveChanges();
         return Ok(quote);
@@ -39,13 +37,12 @@ public class QuotesController : ControllerBase
     public IActionResult UpdateQuote(int id, [FromBody] Quote updated)
     {
         var quote = _db.Quotes.Find(id);
-        if (quote == null) return NotFound();
-        if (quote.UserId != GetUserId()) return Unauthorized();
+        if (quote == null || quote.UserId != UserId) return Unauthorized();
 
         quote.Text = updated.Text;
         quote.Author = updated.Author;
-        _db.SaveChanges();
 
+        _db.SaveChanges();
         return Ok(quote);
     }
 
@@ -53,15 +50,10 @@ public class QuotesController : ControllerBase
     public IActionResult DeleteQuote(int id)
     {
         var quote = _db.Quotes.Find(id);
-        if (quote == null) return NotFound();
-      
+        if (quote == null || quote.UserId != UserId) return Unauthorized();
 
         _db.Quotes.Remove(quote);
         _db.SaveChanges();
-
         return Ok();
     }
-
-    private int GetUserId()
-        => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

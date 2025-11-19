@@ -50,8 +50,8 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "book",
-        "Type": "BookQuotesApi.Models.Book",
+        "Name": "dto",
+        "Type": "BookQuotesApi.Dtos.CreateBookDto",
         "IsRequired": true
       }
     ],
@@ -72,7 +72,23 @@
       },
       {
         "Name": "updated",
-        "Type": "BookQuotesApi.Models.Book",
+        "Type": "BookQuotesApi.Dtos.UpdateBookDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "BookQuotesApi.Controllers.BooksController",
+    "Method": "GetBook",
+    "RelativePath": "api/Books/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
         "IsRequired": true
       }
     ],

@@ -12,25 +12,22 @@ namespace BookQuotesApi.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly AuthService _authService;
+    private readonly AuthService _auth;
 
-    public AuthController(AppDbContext db, AuthService authService)
+    public AuthController(AppDbContext db, AuthService auth)
     {
         _db = db;
-        _authService = authService;
+        _auth = auth;
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+    public async Task<IActionResult> Register(RegisterDto dto)
     {
-        // Kontrollera om användarnamn redan finns i DB
         if (await _db.Users.AnyAsync(u => u.Username == dto.Username))
             return BadRequest("User already exists");
 
-        // Skapa hashar
-        _authService.CreatePasswordHash(dto.Password, out var hash, out var salt);
+        _auth.CreatePasswordHash(dto.Password, out var hash, out var salt);
 
-        // Spara ny användare
         var user = new User
         {
             Username = dto.Username,
@@ -41,19 +38,34 @@ public class AuthController : ControllerBase
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        return Ok("User registered successfully");
+        // ✨ Kopiera template-citat till ny användare
+        var templates = await _db.TemplateQuotes.ToListAsync();
+
+        foreach (var t in templates)
+        {
+            _db.Quotes.Add(new Quote
+            {
+                Text = t.Text,
+                Author = t.Author,
+                UserId = user.Id
+            });
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok("User registered.");
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    public async Task<IActionResult> Login(LoginDto dto)
     {
-        // Hitta användare
         var user = await _db.Users.SingleOrDefaultAsync(u => u.Username == dto.Username);
-        if (user == null || !_authService.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
+        if (user == null) return Unauthorized("Invalid username or password");
+
+        if (!_auth.VerifyPassword(dto.Password, user.PasswordHash, user.PasswordSalt))
             return Unauthorized("Invalid username or password");
 
-        // Skapa JWT-token
-        var token = _authService.CreateToken(user);
+        var token = _auth.CreateToken(user);
         return Ok(new { token });
     }
 }

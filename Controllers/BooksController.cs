@@ -1,4 +1,5 @@
 ﻿using BookQuotesApi.Data;
+using BookQuotesApi.Dtos;
 using BookQuotesApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -26,16 +27,25 @@ public class BooksController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult CreateBook([FromBody] Book book)
+    public IActionResult CreateBook([FromBody] CreateBookDto dto)
     {
-        book.UserId = GetUserId();
+        var book = new Book
+        {
+            Title = dto.Title,
+            Author = dto.Author,
+            PublishedAt = dto.PublishedAt,
+            UserId = GetUserId()
+        };
+
         _db.Books.Add(book);
         _db.SaveChanges();
+
         return Ok(book);
     }
 
+
     [HttpPut("{id}")]
-    public IActionResult UpdateBook(int id, [FromBody] Book updated)
+    public IActionResult UpdateBook(int id, [FromBody] UpdateBookDto updated)
     {
         var book = _db.Books.Find(id);
         if (book == null) return NotFound();
@@ -44,7 +54,21 @@ public class BooksController : ControllerBase
         book.Title = updated.Title;
         book.Author = updated.Author;
         book.PublishedAt = updated.PublishedAt;
+
         _db.SaveChanges();
+
+        return Ok(book);
+    }
+
+    [HttpGet("{id}")]
+    public IActionResult GetBook(int id)
+    {
+        var userId = GetUserId();
+
+        var book = _db.Books.FirstOrDefault(b => b.Id == id && b.UserId == userId);
+
+        if (book == null)
+            return NotFound();
 
         return Ok(book);
     }
